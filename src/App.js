@@ -88,7 +88,15 @@ function CloudObscured({ text, revealed }) {
 }
 
 function App() {
-  const [questions, setQuestions] = useState([]);
+  // Load from localStorage
+  const [questions, setQuestions] = useState(() => {
+    try {
+      const q = localStorage.getItem('hiban_questions');
+      return q ? JSON.parse(q) : [];
+    } catch {
+      return [];
+    }
+  });
   const [showHearts, setShowHearts] = useState(true);
   useEffect(() => {
     setShowHearts(true);
@@ -96,12 +104,27 @@ function App() {
     return () => clearTimeout(timer);
   }, []);
   const [input, setInput] = useState('');
-  const [revealed, setRevealed] = useState(Array(questions.length).fill(false));
+  const [revealed, setRevealed] = useState(() => {
+    try {
+      const r = localStorage.getItem('hiban_revealed');
+      return r ? JSON.parse(r) : Array(questions.length).fill(false);
+    } catch {
+      return Array(questions.length).fill(false);
+    }
+  });
   const [pinMode, setPinMode] = useState(false);
   const [pin, setPin] = useState('');
   const [pinError, setPinError] = useState('');
   const [unlocked, setUnlocked] = useState(false);
   const [pwPrompt, setPwPrompt] = useState({ open: false, idx: null, all: false });
+
+  // Persist questions and revealed to localStorage
+  useEffect(() => {
+    localStorage.setItem('hiban_questions', JSON.stringify(questions));
+  }, [questions]);
+  useEffect(() => {
+    localStorage.setItem('hiban_revealed', JSON.stringify(revealed));
+  }, [revealed]);
 
   // Add a new question
   const handleAdd = (e) => {
