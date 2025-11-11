@@ -87,7 +87,21 @@ function CloudObscured({ text, revealed }) {
   );
 }
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+// Get API URL - detects Netlify automatically or uses environment variable
+const getApiUrl = () => {
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+  // Check if we're on Netlify (at runtime)
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    if (hostname.includes('netlify.app') || hostname.includes('netlify.com')) {
+      return ''; // Use relative URL, Netlify will route to functions via netlify.toml
+    }
+  }
+  // Local development
+  return 'http://localhost:3001';
+};
 
 function App() {
   // Load from localStorage initially (for fast startup)
@@ -125,8 +139,9 @@ function App() {
   // Load questions from server on mount
   useEffect(() => {
     const loadFromServer = async () => {
+      const apiUrl = getApiUrl();
       try {
-        const response = await fetch(`${API_URL}/api/questions`, {
+        const response = await fetch(`${apiUrl}/api/questions`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -169,9 +184,10 @@ function App() {
 
   // Save to server whenever questions or revealed change
   const saveToServer = async (questionsToSave, revealedToSave, retries = 2) => {
+    const apiUrl = getApiUrl();
     for (let i = 0; i <= retries; i++) {
       try {
-        const response = await fetch(`${API_URL}/api/questions`, {
+        const response = await fetch(`${apiUrl}/api/questions`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
