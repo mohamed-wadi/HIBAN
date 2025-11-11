@@ -1,5 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
+
+function HeartRain({ show, duration = 2500, count = 30 }) {
+  const [visible, setVisible] = useState(show);
+  useEffect(() => {
+    if (show) {
+      setVisible(true);
+      const timer = setTimeout(() => setVisible(false), duration);
+      return () => clearTimeout(timer);
+    }
+  }, [show, duration]);
+  if (!visible) return null;
+  return (
+    <div className="heart-rain">
+      {Array.from({ length: count }).map((_, i) => {
+        const left = Math.random() * 100;
+        const size = 18 + Math.random() * 16;
+        const delay = Math.random() * 1.2;
+        const durationAnim = 2.2 + Math.random() * 1.2;
+        return (
+          <span
+            key={i}
+            className="heart-emoji"
+            style={{
+              left: `${left}%`,
+              fontSize: `${size}px`,
+              animationDelay: `${delay}s`,
+              animationDuration: `${durationAnim}s`,
+            }}
+          >
+            ❤️
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
 
 function PasswordPrompt({ onSubmit, onCancel, label }) {
   const [pw, setPw] = useState('');
@@ -52,6 +89,12 @@ function CloudObscured({ text, revealed }) {
 
 function App() {
   const [questions, setQuestions] = useState([]);
+  const [showHearts, setShowHearts] = useState(true);
+  useEffect(() => {
+    setShowHearts(true);
+    const timer = setTimeout(() => setShowHearts(false), 2600);
+    return () => clearTimeout(timer);
+  }, []);
   const [input, setInput] = useState('');
   const [revealed, setRevealed] = useState(Array(questions.length).fill(false));
   const [pinMode, setPinMode] = useState(false);
@@ -118,7 +161,9 @@ function App() {
   };
 
   return (
-    <div className="app-container">
+    <>
+      <HeartRain show={showHearts} />
+      <div className="app-container">
       <h1>Ask Hiban</h1>
       <form className="question-form" onSubmit={handleAdd}>
         <input
@@ -181,6 +226,7 @@ function App() {
       )}
       {unlocked && <div className="unlocked-msg">Tap a question to reveal it!</div>}
     </div>
+    </>
   );
 }
 
