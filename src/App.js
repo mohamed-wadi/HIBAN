@@ -126,20 +126,40 @@ function App() {
   useEffect(() => {
     const loadFromServer = async () => {
       try {
-        const response = await fetch(`${API_URL}/api/questions`);
+        const response = await fetch(`${API_URL}/api/questions`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
         if (response.ok) {
           const data = await response.json();
-          if (data.questions && data.questions.length > 0) {
+          // Always use server data if available (even if empty)
+          if (data.questions) {
             setQuestions(data.questions);
             setRevealed(data.revealed || Array(data.questions.length).fill(false));
             // Update localStorage with server data
             localStorage.setItem('hiban_questions', JSON.stringify(data.questions));
             localStorage.setItem('hiban_revealed', JSON.stringify(data.revealed || []));
+            setSyncError(''); // Clear any previous errors
           }
+        } else {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
       } catch (error) {
         console.error('Failed to load from server:', error);
-        setSyncError('Cannot connect to server. Using local data.');
+        // Check if we have local data to show error
+        const localQuestions = localStorage.getItem('hiban_questions');
+        if (localQuestions) {
+          try {
+            const parsed = JSON.parse(localQuestions);
+            if (parsed && parsed.length > 0) {
+              setSyncError('Cannot connect to server. Using local data.');
+            }
+          } catch (e) {
+            // Ignore parse errors
+          }
+        }
       } finally {
         setLoading(false);
       }
@@ -148,25 +168,34 @@ function App() {
   }, []);
 
   // Save to server whenever questions or revealed change
-  const saveToServer = async (questionsToSave, revealedToSave) => {
-    try {
-      const response = await fetch(`${API_URL}/api/questions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          questions: questionsToSave,
-          revealed: revealedToSave,
-        }),
-      });
-      if (!response.ok) {
-        throw new Error('Failed to save');
+  const saveToServer = async (questionsToSave, revealedToSave, retries = 2) => {
+    for (let i = 0; i <= retries; i++) {
+      try {
+        const response = await fetch(`${API_URL}/api/questions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            questions: questionsToSave,
+            revealed: revealedToSave,
+          }),
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        setSyncError('');
+        return; // Success, exit function
+      } catch (error) {
+        console.error(`Failed to save to server (attempt ${i + 1}/${retries + 1}):`, error);
+        if (i === retries) {
+          // Last attempt failed
+          setSyncError('Cannot sync with server. Changes saved locally only.');
+        } else {
+          // Wait before retry (exponential backoff)
+          await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+        }
       }
-      setSyncError('');
-    } catch (error) {
-      console.error('Failed to save to server:', error);
-      setSyncError('Cannot sync with server. Changes saved locally only.');
     }
   };
 
@@ -245,7 +274,21 @@ function App() {
       <HeartRain show={showHearts} />
       <div className="app-container">
       <h1>Ask Hiban</h1>
-      {syncError && <div className="sync-error" style={{ color: 'orange', fontSize: '12px', marginBottom: '10px' }}>{syncError}</div>}
+      {syncError && (
+        <div className="sync-error" style={{ 
+          color: 'orange', 
+          fontSize: '12px', 
+          marginBottom: '10px',
+          padding: '8px',
+          backgroundColor: '#fff3cd',
+          borderRadius: '4px',
+          border: '1px solid #ffc107'
+        }}>
+          ⚠️ {syncError}
+          <br />
+          <small style={{ fontSize: '10px' }}>Assurez-vous que le serveur backend est démarré: <code>npm run server</code></small>
+        </div>
+      )}
       <form className="question-form" onSubmit={handleAdd}>
         <input
           type="text"
