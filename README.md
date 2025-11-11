@@ -1,70 +1,61 @@
-# Getting Started with Create React App
+# Ask Hiban
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Une application React pour poser des questions à Hiban avec un système de stockage persistant.
 
-## Available Scripts
+## Installation
 
-In the project directory, you can run:
+1. Installer les dépendances :
+```bash
+npm install
+```
 
-### `npm start`
+## Utilisation
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### Développement
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+Vous devez démarrer le serveur backend et le frontend dans deux terminaux séparés :
 
-### `npm test`
+**Terminal 1 - Backend (port 3001) :**
+```bash
+npm run server
+```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+**Terminal 2 - Frontend (port 3000) :**
+```bash
+npm start
+```
 
-### `npm run build`
+### Production
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+1. Construire l'application :
+```bash
+npm run build
+```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+2. Démarrer le serveur :
+```bash
+npm run server
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+Le serveur backend stocke les questions dans `data/questions.json` et les synchronise entre tous les appareils et navigateurs qui accèdent à l'application.
 
-### `npm run eject`
+## Configuration
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+Par défaut, le backend écoute sur le port 3001. Pour changer le port, définissez la variable d'environnement `PORT` :
+```bash
+PORT=3002 npm run server
+```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+Pour le frontend, vous pouvez définir `REACT_APP_API_URL` pour pointer vers un serveur différent :
+```bash
+REACT_APP_API_URL=http://votre-serveur:3001 npm start
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## Fonctionnalités
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+- Ajout de questions
+- Stockage persistant sur serveur (synchronisé entre tous les appareils)
+- Stockage local en cache pour performance
+- Mode "Face to Face" avec PIN
+- Révélation progressive des questions
+- Suppression sécurisée avec mot de passe

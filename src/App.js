@@ -87,8 +87,10 @@ function CloudObscured({ text, revealed }) {
   );
 }
 
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+
 function App() {
-  // Load from localStorage
+  // Load from localStorage initially (for fast startup)
   const [questions, setQuestions] = useState(() => {
     try {
       const q = localStorage.getItem('hiban_questions');
@@ -117,14 +119,69 @@ function App() {
   const [pinError, setPinError] = useState('');
   const [unlocked, setUnlocked] = useState(false);
   const [pwPrompt, setPwPrompt] = useState({ open: false, idx: null, all: false });
+  const [loading, setLoading] = useState(true);
+  const [syncError, setSyncError] = useState('');
 
-  // Persist questions and revealed to localStorage
+  // Load questions from server on mount
   useEffect(() => {
-    localStorage.setItem('hiban_questions', JSON.stringify(questions));
-  }, [questions]);
+    const loadFromServer = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/questions`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.questions && data.questions.length > 0) {
+            setQuestions(data.questions);
+            setRevealed(data.revealed || Array(data.questions.length).fill(false));
+            // Update localStorage with server data
+            localStorage.setItem('hiban_questions', JSON.stringify(data.questions));
+            localStorage.setItem('hiban_revealed', JSON.stringify(data.revealed || []));
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load from server:', error);
+        setSyncError('Cannot connect to server. Using local data.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadFromServer();
+  }, []);
+
+  // Save to server whenever questions or revealed change
+  const saveToServer = async (questionsToSave, revealedToSave) => {
+    try {
+      const response = await fetch(`${API_URL}/api/questions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          questions: questionsToSave,
+          revealed: revealedToSave,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to save');
+      }
+      setSyncError('');
+    } catch (error) {
+      console.error('Failed to save to server:', error);
+      setSyncError('Cannot sync with server. Changes saved locally only.');
+    }
+  };
+
+  // Persist questions and revealed to localStorage and server
   useEffect(() => {
-    localStorage.setItem('hiban_revealed', JSON.stringify(revealed));
-  }, [revealed]);
+    if (!loading) {
+      localStorage.setItem('hiban_questions', JSON.stringify(questions));
+      localStorage.setItem('hiban_revealed', JSON.stringify(revealed));
+      // Debounce server save to avoid too many requests
+      const timeoutId = setTimeout(() => {
+        saveToServer(questions, revealed);
+      }, 500);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [questions, revealed, loading]);
 
   // Add a new question
   const handleAdd = (e) => {
@@ -188,6 +245,7 @@ function App() {
       <HeartRain show={showHearts} />
       <div className="app-container">
       <h1>Ask Hiban</h1>
+      {syncError && <div className="sync-error" style={{ color: 'orange', fontSize: '12px', marginBottom: '10px' }}>{syncError}</div>}
       <form className="question-form" onSubmit={handleAdd}>
         <input
           type="text"
